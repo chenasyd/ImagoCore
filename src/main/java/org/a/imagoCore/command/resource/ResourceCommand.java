@@ -62,11 +62,20 @@ public class ResourceCommand implements SubCommand {
             }
         }
 
+        // 重新加载注册表，确保新增的 PNG / 配置变更被纳入
+        plugin.getGuiRegistry().load();
+        plugin.getCharRegistry().load(
+                plugin.getConfigManager().getMainConfig().getCharDefaultAscent(),
+                plugin.getConfigManager().getMainConfig().getCharDefaultHeight()
+        );
+
         ResourcePackGenerator generator = new ResourcePackGenerator(
                 plugin, outputFile, plugin.getGuiRegistry(),
                 plugin.getCharRegistry());
         try {
             generator.build();
+            plugin.getGuiRegistry().markBuilt();
+            plugin.getCharRegistry().markBuilt();
             sender.sendMessage("§aResource pack built: " + outputFile.getAbsolutePath());
         } catch (IOException e) {
             sender.sendMessage("§cFailed to build resource pack: " + e.getMessage());

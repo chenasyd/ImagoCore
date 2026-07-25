@@ -103,10 +103,11 @@ public class GuiEntry {
     /**
      * Font JSON provider file path.
      *
-     * <p>Minecraft's bitmap font provider automatically prepends
-     * {@code textures/} to the path, so the font JSON says
-     * {@code minecraft:textures/gui/...} but the file is stored at
-     * {@code textures/textures/gui/...} inside the zip.
+     * <p>Minecraft's bitmap font provider resolves {@code namespace:path}
+     * to {@code assets/<namespace>/textures/<path>}.  Including the
+     * {@code textures/} prefix here means the actual zip entry lives at
+     * {@code assets/minecraft/textures/textures/gui/...}, which matches
+     * {@link #getZipEntryPath()}.
      */
     public String getTexturePackPath() {
         return "minecraft:textures/gui/" + folderId + "/" + textureFile.getName();
@@ -115,9 +116,9 @@ public class GuiEntry {
     /**
      * Zip entry path for the texture file.
      *
-     * <p>Because bitmap font providers auto-prepend {@code textures/},
-     * the actual file path inside the zip has an extra level:
-     * {@code assets/minecraft/textures/textures/gui/...}
+     * <p>The double {@code textures/} is intentional: the font JSON file
+     * field already contains {@code textures/}, and Minecraft prepends
+     * another {@code textures/} during resolution.
      */
     public String getZipEntryPath() {
         return "assets/minecraft/textures/textures/gui/"

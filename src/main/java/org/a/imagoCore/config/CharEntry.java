@@ -49,10 +49,11 @@ public class CharEntry {
     /**
      * Font JSON provider file path.
      *
-     * <p>Minecraft's bitmap font provider automatically prepends
-     * {@code textures/} to the path, so the font JSON says
-     * {@code minecraft:textures/char/...} but the file is stored at
-     * {@code textures/textures/char/...} inside the zip.
+     * <p>Minecraft's bitmap font provider resolves {@code namespace:path}
+     * to {@code assets/<namespace>/textures/<path>}.  Including the
+     * {@code textures/} prefix here means the actual zip entry lives at
+     * {@code assets/minecraft/textures/textures/char/...}, which matches
+     * {@link #getZipEntryPath()}.
      */
     public String getTexturePackPath() {
         return "minecraft:textures/char/" + textureFile.getName();
@@ -61,7 +62,9 @@ public class CharEntry {
     /**
      * Zip entry path for the texture file.
      *
-     * <p>Double {@code textures/} accounts for Minecraft's auto-prefix.
+     * <p>The double {@code textures/} is intentional: the font JSON file
+     * field already contains {@code textures/}, and Minecraft prepends
+     * another {@code textures/} during resolution.
      */
     public String getZipEntryPath() {
         return "assets/minecraft/textures/textures/char/"
