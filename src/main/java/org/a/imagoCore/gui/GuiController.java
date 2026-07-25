@@ -156,6 +156,22 @@ public class GuiController {
     }
 
     /**
+     * Creates an {@link Inventory} with a pre-built title {@link Component},
+     * <b>without opening it</b>.
+     *
+     * <p>This is useful when the caller has already composed the full title
+     * (e.g. background + overlays via {@link GuiTitleRenderer#buildWithOverlays}).
+     *
+     * @param size          inventory size (must be a multiple of 9)
+     * @param title         the pre-built title component
+     * @param fallbackTitle plain-text title used on Spigot (no Component support)
+     * @return the created inventory with the given title
+     */
+    public Inventory createTitledInventory(int size, Component title, String fallbackTitle) {
+        return createInventoryWithComponent(size, title, fallbackTitle);
+    }
+
+    /**
      * Builds the title {@link Component} for a bound GUI ID.
      *
      * @param guiId logical GUI ID
@@ -327,6 +343,7 @@ public class GuiController {
 
     private static Method CREATE_INVENTORY_COMPONENT;
     private static boolean REFLECTION_INIT = false;
+    private static final Logger STATIC_LOGGER = Logger.getLogger("ImagoCore");
 
     /**
      * Creates an Inventory with a Component title using reflection.
@@ -343,19 +360,27 @@ public class GuiController {
                         int.class,
                         Component.class
                 );
+                STATIC_LOGGER.info("[GuiController] Found Paper/Folia Component inventory API.");
             } catch (NoSuchMethodException e) {
                 CREATE_INVENTORY_COMPONENT = null;
+                STATIC_LOGGER.warning("[GuiController] Component inventory API not found "
+                        + "— falling back to String titles. Image titles will NOT render.");
             }
         }
 
         if (CREATE_INVENTORY_COMPONENT != null) {
             try {
-                return (Inventory) CREATE_INVENTORY_COMPONENT.invoke(null, null, size, title);
+                Inventory inv = (Inventory) CREATE_INVENTORY_COMPONENT.invoke(null, null, size, title);
+                STATIC_LOGGER.fine("[GuiController] Created Component-titled inventory "
+                        + "(size=" + size + ", fallback=\"" + fallbackTitle + "\")");
+                return inv;
             } catch (Exception e) {
-                // fall through to string fallback
+                STATIC_LOGGER.warning("[GuiController] Component inventory invocation failed: "
+                        + e.getMessage() + " — falling back to String title.");
             }
         }
 
+        STATIC_LOGGER.fine("[GuiController] Using String fallback title: \"" + fallbackTitle + "\"");
         return Bukkit.createInventory(null, size, fallbackTitle);
     }
 }

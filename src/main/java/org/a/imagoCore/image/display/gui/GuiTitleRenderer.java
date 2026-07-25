@@ -231,5 +231,22 @@ public final class GuiTitleRenderer {
             int renderedW = entry.getHeight(); // approximate: assume square or use height
             return new OverlaySpec(entry.getCharacter(), x, renderedW);
         }
+
+        /**
+         * Creates an overlay spec from a GuiEntry (GUI background image
+         * used as a decoration layer).
+         *
+         * <p>This allows images from the {@code gui/} directory to be
+         * layered on top of another GUI background.  Note that ascent
+         * control (Y positioning) is only available for {@code char/}
+         * entries via the variant system.
+         *
+         * @param entry the GUI entry to use as an overlay
+         * @param x     target X position relative to background left edge
+         */
+        public static OverlaySpec fromGuiEntry(org.a.imagoCore.config.GuiEntry entry,
+                                               int x) {
+            return new OverlaySpec(entry.getBackgroundChar(), x, entry.getRenderedWidth());
+        }
     }
 }
