@@ -1,0 +1,55 @@
+name: Build ImagoCore
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  release:
+    types: [ created ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: maven
+
+    - name: Install local dependencies
+      run: |
+        mvn -B install:install-file \
+          -Dfile=lib/guild-sdk-1.6.6.jar \
+          -DgroupId=com.guild \
+          -DartifactId=guild-sdk \
+          -Dversion=1.6.6 \
+          -Dpackaging=jar
+        mvn -B install:install-file \
+          -Dfile=lib/guild-comm-1.6.6.jar \
+          -DgroupId=com.guild \
+          -DartifactId=guild-comm \
+          -Dversion=1.6.6 \
+          -Dpackaging=jar
+
+    - name: Build with Maven
+      run: mvn -B clean package -DskipTests
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ImagoCore-${{ github.sha }}
+        path: target/*.jar
+        retention-days: 30
+
+    - name: Upload to release
+      if: github.event_name == 'release'
+      uses: softprops/action-gh-release@v2
+      with:
+        files: target/*.jar
