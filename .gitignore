@@ -1,0 +1,7 @@
+#local
+.idea/
+.vscode/
+
+/target/
+/custom_pack/
+DEV.md

@@ -1,0 +1,3 @@
+# ImagoCore 国际化缺失键
+# 格式: 英文键=中文翻译
+# 请在 localization 完成后逐条移除

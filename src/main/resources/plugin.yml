@@ -1,0 +1,19 @@
+name: ImagoCore
+version: '1.0-SNAPSHOT'
+main: org.a.imagoCore.ImagoCore
+api-version: '1.21'
+depend: []
+folia-supported: true
+load: STARTUP
+
+commands:
+  imagocore:
+    description: Main ImagoCore command
+    aliases: [ic]
+    permission: imagocore.admin
+    usage: "/<command> <subcommand> [args...]"
+
+permissions:
+  imagocore.admin:
+    description: Allows using ImagoCore admin/test commands
+    default: op
