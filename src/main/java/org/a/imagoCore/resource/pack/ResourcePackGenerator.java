@@ -9,6 +9,7 @@ import org.a.imagoCore.config.GuiRegistry;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -93,15 +94,18 @@ public class ResourcePackGenerator {
                 zos.closeEntry();
             }
 
-            // 4. Character-image textures
+            // 4. Character-image textures (base + variants, deduplicated)
             if (charRegistry != null) {
-                for (CharEntry entry : charRegistry.getEntries()) {
+                Set<String> writtenPaths = new java.util.HashSet<>();
+                for (CharEntry entry : charRegistry.getAllEntries()) {
                     File texFile = entry.getTextureFile();
                     if (!texFile.exists()) {
                         plugin.getLogger().warning("Char texture not found: " + texFile);
                         continue;
                     }
-                    zos.putNextEntry(new ZipEntry(entry.getZipEntryPath()));
+                    String zipPath = entry.getZipEntryPath();
+                    if (!writtenPaths.add(zipPath)) continue; // variant shares texture
+                    zos.putNextEntry(new ZipEntry(zipPath));
                     Files.copy(texFile.toPath(), zos);
                     zos.closeEntry();
                 }

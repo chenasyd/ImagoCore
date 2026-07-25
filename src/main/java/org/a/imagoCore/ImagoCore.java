@@ -4,10 +4,12 @@ import org.a.imagoCore.command.ImagoCoreCommand;
 import org.a.imagoCore.command.resource.ResourceCommand;
 import org.a.imagoCore.command.test.GuiTestHandler;
 import org.a.imagoCore.command.test.TestCommand;
+import org.a.imagoCore.config.CharEntry;
 import org.a.imagoCore.config.CharRegistry;
 import org.a.imagoCore.config.ConfigManager;
 import org.a.imagoCore.config.GuiRegistry;
 import org.a.imagoCore.gui.GuiController;
+import org.a.imagoCore.metrics.ImagoMetrics;
 import org.a.imagoCore.resource.pack.ResourcePackGenerator;
 import org.a.imagoCore.scheduler.CompatibleScheduler;
 import org.bukkit.command.PluginCommand;
@@ -32,6 +34,9 @@ public final class ImagoCore extends JavaPlugin {
 
     // GUI controller
     private GuiController guiController;
+
+    // bStats metrics
+    private ImagoMetrics imagoMetrics;
 
     // ── Lifecycle ────────────────────────────────────────────────
 
@@ -81,6 +86,10 @@ public final class ImagoCore extends JavaPlugin {
         // 4d. Init GUI controller
         this.guiController = new GuiController(guiRegistry, getLogger());
         guiController.initialize();
+
+        // 4e. Init bStats metrics
+        int bstatsPluginId = 32885;
+        this.imagoMetrics = new ImagoMetrics(this, bstatsPluginId);
 
         // 5. Register commands
         this.mainCommand = buildCommandTree();
@@ -241,7 +250,24 @@ public final class ImagoCore extends JavaPlugin {
         return charRegistry;
     }
 
+    /**
+     * Gets or creates a char-image variant with a custom ascent.
+     * External plugins use this to request per-overlay Y positioning.
+     * After registering new variants, run {@code /ic resource build}.
+     *
+     * @param baseName the base char entry name (e.g. "test_icon")
+     * @param ascent   the desired ascent for the variant
+     * @return the variant CharEntry, or null if the base entry is missing
+     */
+    public CharEntry getOrCreateCharVariant(String baseName, int ascent) {
+        return charRegistry.getOrCreateVariant(baseName, ascent);
+    }
+
     public GuiController getGuiController() {
         return guiController;
+    }
+
+    public ImagoMetrics getImagoMetrics() {
+        return imagoMetrics;
     }
 }

@@ -37,6 +37,11 @@ public class CharRegistry {
     private static final String CHAR_POOL_START = "\uE900";
     private static final int CHAR_START = CHAR_POOL_START.codePointAt(0);
 
+    /** Start of the variant Unicode pool (U+EA00).
+     *  Variants are the same image with a different ascent. */
+    private static final String VARIANT_POOL_START = "\uEA00";
+    private static final int VARIANT_START = VARIANT_POOL_START.codePointAt(0);
+
     private final ImagoCore plugin;
     private final File charDir;
     private final File masterFile;
@@ -45,6 +50,8 @@ public class CharRegistry {
     private int defaultHeight = 8;
 
     private final List<CharEntry> entries = new ArrayList<>();
+    /** Variants: key = "baseName:ascent", value = CharEntry with custom ascent. */
+    private final Map<String, CharEntry> variants = new LinkedHashMap<>();
 
     public CharRegistry(ImagoCore plugin) {
         this.plugin = plugin;
@@ -139,7 +146,32 @@ public class CharRegistry {
             }
         }
 
-        plugin.getLogger().info("Loaded " + entries.size() + " char registrations.");
+        // ── Load persisted variants (same image, different ascent) ──
+        variants.clear();
+        ConfigurationSection varSec = master.getConfigurationSection("variants");
+        if (varSec != null) {
+            for (String key : varSec.getKeys(false)) {
+                String varChar = varSec.getString(key);
+                if (varChar == null || varChar.isEmpty()) continue;
+                // key format: "baseName:ascent"
+                int colon = key.lastIndexOf(':');
+                if (colon < 0) continue;
+                String baseName = key.substring(0, colon);
+                int ascent;
+                try {
+                    ascent = Integer.parseInt(key.substring(colon + 1));
+                } catch (NumberFormatException e) {
+                    continue;
+                }
+                CharEntry base = getEntry(baseName);
+                if (base == null) continue;
+                variants.put(key, new CharEntry(key, varChar,
+                        base.getTextureFile(), ascent, base.getHeight()));
+            }
+        }
+
+        plugin.getLogger().info("Loaded " + entries.size() + " char registrations"
+                + (variants.isEmpty() ? "." : " + " + variants.size() + " variants."));
     }
 
     /** All registered entries. */
@@ -153,6 +185,65 @@ public class CharRegistry {
             if (e.getName().equals(name)) return e;
         }
         return null;
+    }
+
+    /**
+     * Returns all entries including variants, for font/resource-pack
+     * generation.
+     */
+    public List<CharEntry> getAllEntries() {
+        if (variants.isEmpty()) return getEntries();
+        List<CharEntry> all = new ArrayList<>(entries);
+        all.addAll(variants.values());
+        return Collections.unmodifiableList(all);
+    }
+
+    /**
+     * Gets or creates a variant of a base char entry with a custom
+     * ascent value.  The variant shares the same texture but receives
+     * a unique Unicode character from the U+EA00+ pool and its own
+     * bitmap font provider in the resource pack.
+     *
+     * @param baseName the base char entry name (e.g. "test_icon")
+     * @param ascent   the desired ascent for the variant
+     * @return the variant CharEntry, or null if the base entry is missing
+     */
+    public CharEntry getOrCreateVariant(String baseName, int ascent) {
+        String key = baseName + ":" + ascent;
+        CharEntry existing = variants.get(key);
+        if (existing != null) return existing;
+
+        CharEntry base = getEntry(baseName);
+        if (base == null) return null;
+
+        // Assign a Unicode char from the variant pool
+        YamlConfiguration master = masterFile.exists()
+                ? YamlConfiguration.loadConfiguration(masterFile)
+                : new YamlConfiguration();
+
+        String assigned = master.getString("variants." + key);
+        if (assigned == null || assigned.isEmpty()) {
+            Set<String> usedChars = new HashSet<>();
+            for (CharEntry e : entries) usedChars.add(e.getCharacter());
+            for (CharEntry e : variants.values()) usedChars.add(e.getCharacter());
+
+            int idx = 0;
+            while (usedChars.contains(variantCharAt(idx))) idx++;
+            assigned = variantCharAt(idx);
+
+            master.set("variants." + key, assigned);
+            try {
+                master.save(masterFile);
+            } catch (IOException ex) {
+                plugin.getLogger().log(Level.WARNING,
+                        "Failed to persist variant " + key, ex);
+            }
+        }
+
+        CharEntry variant = new CharEntry(key, assigned,
+                base.getTextureFile(), ascent, base.getHeight());
+        variants.put(key, variant);
+        return variant;
     }
 
     // ── Persistence / auto-rebuild support ───────────────────────
@@ -198,6 +289,12 @@ public class CharRegistry {
                     .append(e.getHeight())
                     .append("\n");
         }
+        for (CharEntry e : variants.values()) {
+            raw.append("variant:").append(e.getName()).append("|")
+                    .append(e.getCharacter()).append("|")
+                    .append(e.getAscent())
+                    .append("\n");
+        }
         try {
             byte[] digest = MessageDigest.getInstance("SHA-256")
                     .digest(raw.toString().getBytes(StandardCharsets.UTF_8));
@@ -213,5 +310,9 @@ public class CharRegistry {
 
     private static String charAt(int idx) {
         return new String(Character.toChars(CHAR_START + idx));
+    }
+
+    private static String variantCharAt(int idx) {
+        return new String(Character.toChars(VARIANT_START + idx));
     }
 }

@@ -35,6 +35,12 @@
         </executions>
         <configuration>
           <filters />
+          <relocations>
+            <relocation>
+              <pattern>org.bstats</pattern>
+              <shadedPattern>org.a.imagoCore.libs.bstats</shadedPattern>
+            </relocation>
+          </relocations>
         </configuration>
       </plugin>
     </plugins>

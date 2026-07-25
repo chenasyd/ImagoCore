@@ -68,9 +68,9 @@ public class GuiFontDefinition {
             ).build());
         }
 
-        // All registered character images
+        // All registered character images (base + variants)
         if (charRegistry != null) {
-            for (CharEntry entry : charRegistry.getEntries()) {
+            for (CharEntry entry : charRegistry.getAllEntries()) {
                 def.addProvider(FontProvider.bitmap(
                         entry.getTexturePackPath(),
                         entry.getAscent(),
